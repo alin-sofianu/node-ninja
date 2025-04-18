@@ -1,0 +1,285 @@
+from https://www.youtube.com/watch?v=zb3Qk8SG5Ms&list=PL4cUxeGkcC9jsz4LDYc6kv3ymONOKxwBU&index=1&pp=iAQB
+==================================================================================
+1. BASICS
+==================================================================================
+global.setTimeout(() => {}, 3000) // performs once; it is not needed to mention global;
+const int = setInterval(() => {}, 3000) // performs on and on; const int is an id for stopping it with clearInterval(int);
+=====================================
+__dirname  // current directory's absolute path;
+__filename // also includes the file name;
+=====================================
+const {people, ages} = require('./module.js') // needs relative path; returns empty object if module.js does not export;
+// then in module.js
+module.exports = {people: people, ages: ages} // shorthand is {people, ages}
+=====================================
+os.platform() os.homedir()
+=====================================
+fs.readFile('./pathToFile', (err, data) => {
+    // this is a cb function that fires when reading data is complete,
+    // because fs.readFile is async, so it takes some time. Has err and data args.
+    data.toString() // method to turn the data buffer to string;
+})
+
+fs.writeFile('./pathToFile', 'data to be written', () => {cb func that fires when writing data is complete, it has no args})
+fs.mkdir('./createDirectoryHere', (err) => {cb func that fires when writing data is complete}) // if dir already exists it gives an error
+=====================================
+// checks if an asset(file or dir) exists; 
+// it makes sense to make it sync( existsSync(), not exists() ), because you want to block execution of code right at checking if the file exists
+// instead of moving on and creating the asset, because if it actually exists already, you get an error.
+if (!fs.existsSync('./assets')) { code to create the file }
+else { code to remove the file }
+
+// delete a file; here also, first check with fs.existsSync first, or you get the error that it does not exists, if it doesn't.
+fs.unlink('./deleteMe', (err)=>{}) 
+=====================================
+If data is big, use streams. You get first part(chunk or buffer) of data, as soon as it's available, so you can use it.
+
+const readStream = fs.readStream('./readDataFromThisFile');
+const writeStream = fs.writeStream('./writeDataToThisFile);
+
+    readStream.on('data', (chunk)=>{
+        console.log(chunk.toString());
+        writeStream(chunk);
+    });
+// 'on' is an event listener.
+// 'data' is a data event, it means when we get a chunk of data that we can use; then the cb fires.
+// instead of using chunk.toString you can add { encoding: 'utf8 } as second param to fs.createReadStream
+// there is another type of stream, called duplex.
+
+readStream.pipe(writeStream) // this is a pipe, always use from a read to a write stream; 
+When we read a file, we get back a buffer, a package of data like this:
+    <Buffer 48 65 6c 6c 6f 20 66 72 6f 6d 20 62 6c 6f 67 31 ... 65486 more bytes>
+each number is an ASCII character(in hexadecimal)
+use .toString on this data, to get a string
+
+When we use a pipe IT MUST be from a readable stream to a writable stream.
+When you type node in terminal, you get into REPL mode(read–eval–print loop), and you can execute JS on the computer.
+==================================================================================
+2. CLIENTS AND SERVERS
+==================================================================================
+A server program runs every time it gets a request.
+
+localhost(is like a domain name on the web) takes you to a specific IP address, called a loopback IP address, your own computer, at => 127.0.0.1
+
+Every app on your computer that connects to the internet, does it with different port numbers.
+Ports are like different doors to the same computer, that connect to the internet different pieces of software,
+to keep information separate from one another.
+
+    const server = http.createServer((req, res) => {...}) // req.url has the path
+
+    server.listen(3000, 'localhost', cb)
+==================================================================================
+3.  Requests & Responses
+==================================================================================
+req.url starts at "/". As in after origin???
+
+To build the res object:
+1. first formulate response headers(type of data like text, JSON, HTML or set cookies)
+    res.setHeader('Content-Type', 'text/plain');
+2. res.write("Hello Alin"); // this is the data to be sent to the browser
+3. res.end(); // send data
+
+HTTP headers are key-value pairs sent by the server in the response object of an HTTP request. 
+These headers provide information about the server, the requested resource, and the response itself.
+=====================================
+create /views dir to store the HTML files that you want to send at different paths.
+How to get the url from request, and dependant on that, send the appropiate file in the response.
+for now you can use a switch statement and construct a "path" string variable, that you then pass as first argument to fs.readFile,
+get the proper HTML data, and use it in res.write().
+=====================================
+Common status codes: 200 OK, 301 Resource moved, 404 Not found, 500 Internal server error.
+Status codes ranges: 100's Informational responses, 200's success codes, 300's codes for redirects,
+400's user or client error codes, 500's server error codes.
+On the server, if you want to set the status code of a response, you use res.statusCode = xxx;
+=====================================
+Redirects are HTTP responses that instruct the client to request a different URL or resource.
+By redirecting the client to a new URL, the user can easily navigate to the desired page or resource without having to manually enter the URL.
+Redirects in code are typically accomplished using the res.writeHead() and res.end() methods in Node.js.
+
+    res.setHeader('Location', '/about') // redirect a request towards '/about', using 'Location' Header.
+
+==================================================================================
+4.  NPM
+==================================================================================
+    npm install // looks at package.json and install everything
+==================================================================================
+5.  Express Apps
+==================================================================================
+Commonly, a server created with express is named app.js
+
+    res.send() // it infers the type of content so it automatically sets "Content-Type" header.
+               // also infers the status code and sets it, so again, you don't have to do it manually, unless it's custom.
+    res.sendFile('./file', {root: __dirname}) // by default it expects an absolute path, or give the second argument object to tell it where its relative from.
+    res.redirect() // redirects, it's like adding a "Location" header on res object, with the new URL.
+                   // it expects a pathc as argument, not a file.
+
+    app.use() // will fire if the request reaches this point in the code. If a request matches a res.get('/file') that code will run and will not look further. So position of this is important. It doesn't have the first argument, path, it just has the cb function, so it can fire for whatever requested path.
+
+        app.use((req, res) => {
+            res.status(404).sendFile("./views/404.html", { root: __dirname });
+        });
+
+==================================================================================
+6.  View Engines, here we use EJS(others are PUG, Handlebars.js etc.)
+==================================================================================
+EJS Templates are processed through the EJS view engine on the server.
+The view files are on the server. When we want to render one to the browser, that view file is
+passed to the EJS engine, that looks for dynamic content like variable, loops, conditionals etc,
+replaces them, and gives a HTML page. For that it uses the data object(second argument) passed to res.render().
+Then that HTML is sent to the browser.
+THIS PROCESS IS CALLED SERVER SIDE RENDERING.!!!
+
+EJS views files use .ejs extension. They are like dynamic HTML.
+
+    app.set("view engine", "ejs") // for giving settings to the app. One of thouse is "view engine", here set to ejs.
+
+The default folder where EJS AND Express will look for views files is /views.
+If you want to keep it somewhere else, use this other configuration from app.set():
+    app.set("views","myViews")
+
+    res.render() // to send a .ejx instead of .html, we dont use res.send anymore, we have to render it.
+
+    <% any JS can go here %> // EJS scriptlet. It runs as JS, on the server.
+    res.render("index", { title: "HOME" }) // the title goes into index view, and can be referenced there with <%= title %>
+
+    <%- include('./partials/footer.ejs')%> // embed another whole ejs file, that can be just some normal html snippet, in an ejs file.
+
+==================================================================================
+7.  Middleware
+==================================================================================
+Technically it is any code that runs on the server, between getting a request and sending a response.
+Like for the 404 case, when we used app.use() for catch-all, and not app.get() as for normal route.
+
+app.get runs only for get requests, app.use runs for every route.
+
+Middleware runs top to bottom in the code, until we explicitly exit the process or send explicitly the response.
+So order is very important.
+Middleware typically modifies the request or response objects before one of our application's route handlers are called.
+A middleware function calls next() to invoke the next handler function.
+Middleware examples: 
+1) Logger middleware to log details of every request.
+2) Authentication check middleware for portected routes.
+3) Middleware to parse JSON data form requests.
+4) Return 404 pages.
+
+3rd party middleware: Morgan(logger), Helmet(security), etc.
+
+Some middleware comes shipped with Express. We will use one(the static middleware, express.static) to send a css file.
+This is why until now we used <style> tags in the HTML views, because there was no way to link CSS files to HTML until now.
+This happens because the server protects automatically all files from the users in the browsers.
+To allow browsers a file, we have to specify which file it is allowed to acces. aka what files are public.
+    app.use(express.static("public")); // means that files from "public" directory are public,
+                                       // and it will be used as base for relative paths in <link rel="stylesheet" href="/styles.css">
+
+Everything from public folder is accesible from front-end.
+==================================================================================
+8.  MongoDB(NoSQL)
+==================================================================================
+It is split up into "collections", kind of like tables in SQL databases.
+Each collection is used to store a particular type of data, like User Collection and Blog Collection.
+Each collection stores "documents". A document is kind of like a record(or row or entry) in a SQL database.
+Each document represents a single item of data. So let's say a Blog document represents a single blog.
+They are stored in a format similar to JSON or JS objects. They store a series of key-value pairs.
+
+MongoDB Setup & Atlas(when working with MongoDB theres 2 different setup options we can use):
+1) Setup MongoDB locally, and deploy it.
+2) Use a cloud database which is already hosted, and easier to manage. Th csloud service we will use is called MongoDB Atlas.
+
+Gist of using MongoDB Atlas: on MongoDB website, setup an account, a cluster, a user that has acces to the db, in your cod connect your app to it with the user/pass you set in the browser, then uses with mongoose and mongoose.connect. Move app.listen(3000s) statments to where you know connection has already been made to the db.
+To connect from your code(app) to the db, we could use MongoDB API and package, and we would be able to make queries to the db also.
+It is easier to use Mongoose to connect and interact with the database.
+
+Mongoose, Models & Schemass
+Mongoose is an ODM library(Object Document Mapping library). It means that it wraps the standard MongoDB API and provides
+an easier way to connect and interact with the db.
+The way we generally work with MongoDB and Mongoose is to create "Schemas" and "Models".
+In Mongoose we make the "Schema" first. It defines the structure of a "document"(or data type) stored in a db collection.
+It describes what properties it should have, what type are thouse properties etc. 
+
+After we create the Schema, we create a "Model" based on that "Schema". 
+The model is what actually allows us to communicate with a particular db collection. 
+The model is a constructor, and it creates instances that are "documents"(entries).
+Ex: if we create a "Blog Model" based on "Blog Schema", it will have on it static and instance methods that we can use to interact
+with data from Blog Collection.
+
+Create a Schema and a Model for blog, in a new dir, "models" and in file blog.js
+    const Schema = mongoose.Schema // the Model will wrap around this. Capitalised because it's a constructor func.
+    const blogSchema = new Schema({
+        title: {
+            type: String,
+            required: true
+        },
+        snippet: {
+            type: String,
+            required: true
+        },
+        body: {
+            type: String,
+            required: true
+        },
+    }, { timestamps: true }) // options objects
+
+    // create the model
+    const Blog = mongoose.model("Blog", blogSchema); 
+See code in models/blog.js for Model.
+==================================================================================
+9.  Get, Post & Delete Requests
+==================================================================================
+POST requests:
+Add this to form tag in the create.ejs.
+    <form action="/blogs" method="POST">
+This will make a POST request at /blogs, dunno why not at /blogs/create, but it does not matter because in the app,
+it is handleded by app.post with '/blogs' route.
+
+Form data will be in req.body because of this line(middleware): 
+    app.use(express.urlencoded({ extended: true }));
+
+ROUTE PARAMETERS:
+They are the route parts that are variables.
+First you have to extract the param from a route, so you can use it.
+Each document has an _id, which mongoose makes it a string. You have acces to that in the blogs variable in the .ejs files.
+Use it to make links out of articles in blogs with ejs.
+Then create app.get('blogs/:id') route, and render a details.ejs file with the appropiate data.
+
+DELETE requests:
+Add a delete button on each blog post page.
+    <a class="delete" data-doc="<%= blog._id %>">delete</a>
+You need a custom script for this, you have to send the data-doc, aka the id of the blog, with the fetch API and send a delete request.
+That <script> tag will run in the browser(front-end). What it does is send an AJAX request.
+When we do this, we can't redirect from NODE, we have to send to the front-end some JSON which will have a redirect property.
+Then we do the redirect on the front-end. WE CANT REDIRECT ON THE SERVER, because it's an AJAX request.
+
+  Blog.findByIdAndDelete(id).then((result) => {
+    res.json({ redirect: "/blogs" });
+  });
+
+Then in front-end use window.location.href to redirect.
+==================================================================================
+10.  Express Router & MVC
+==================================================================================
+Express Router is used to split the routes into different files, and manage them in small groups of routes.
+Move all app.get('/blogs/blabla) into routes/blogRoutes, replace app. with router. and export router.
+Import it into app.js, adn use router like a middleware.
+
+    const router = express.Router() // it's like a mini app, that we use in the file app.js
+    module.exports = router;
+
+    const router = require('./routes/blogRoutes')
+    app.use(router)
+
+MVC BASICS(Controllers) we keep in /models, /views, /controllers folders.
+Stands for Model, View, Controller. It is a method of structuring code and files. Keeps code modular and easier to read and reuse.
+We have seen the M and V, View is where we make the html and Model is where we describe our data and use it to interact with the db.
+Controller is the thing that links our models and our views. They use models to get data and pass it in some views.
+We have tdone that already in route handlers, but the idea of a Controller is to extract thouse handler functions in a separate file.
+
+Then we just refference thouse controller functions into our routes files.
+
+This is just to make code easier to manage and understand. Splitting code in different area of files, and each area has a single role:
+1) a route files matches an incoming request then
+2) passes thouse requests to the correct controller function
+3) a controller, communicates with the appropiate Model
+4) to get the data and put it into a view
+5) a view then renders that data into a template that then gets sent to a browser.
+
+For every new type of resource and set of routes, you should follow the MVC pattern, a route file for the routes, a mdoel for the data and a controller for the handlers. And a folder for the views as well.

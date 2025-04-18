@@ -1,0 +1,26 @@
+NodeBlogApp - backend app - don't forget a good readme file
+    filter: hue-rotate(168.1deg);
+Title - Caféista
+Subtitle - The quotidian gazette served cold.
+Ready to be visited destinations for all travelers of the mind.
+
+mention: MEN stack, Node backens blog app, ejs, to write a post you need your IP whitelisted in the db atlas,
+
+vezi daca apar data/ora unui commit cand a fost facut sau cand a fost uploadat pe github.
+1) create repository on github and configure it locally.
+2) to create a Node app, you can just start writing. OR npm init and go from there?
+    npm install -g nodemon // then run files with "nodemon" instead of "node"
+    what happens if i npm init AFTER i install something?
+3) install Express and create app.js file and initiate the lib.
+4) create /views/index.html for home page and the other static pages, also 404. link them with <nav> that has anchors.
+5) in app.js make the routes for the static pages with app.get()
+// express app, const app = express()
+// listen for requests
+// redirects, redirect /about us to /about
+// 404, with app.use() middleware
+
+res.sendFile('', {root: __dirname}) sends HTML files, expects relative path from root
+res.send sends string of html
+========================
+EJS stuff
+
